@@ -10,12 +10,13 @@ dotenv.config();
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "http://localhost:5173", // frontend URL
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://your-vercel-url.vercel.app"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 app.use("/api/commits", commitRoutes);
