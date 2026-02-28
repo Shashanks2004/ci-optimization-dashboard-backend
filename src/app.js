@@ -13,7 +13,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://your-vercel-url.vercel.app"
+     "https://ci-optimization-dashboard-frontend.vercel.app"
   ],
   credentials: true
 }));
