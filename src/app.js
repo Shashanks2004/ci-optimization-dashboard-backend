@@ -5,7 +5,7 @@ import commitRoutes from "./routes/commit.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
 import githubRoutes from "./routes/github.routes.js";
-import authRoutes from "./routes/auth.routes.js";
+import authRoutes from "./routes/auth.js";
 
 
 dotenv.config();
