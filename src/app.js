@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import commitRoutes from "./routes/commit.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
+import githubRoutes from "./routes/github.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 
 
 dotenv.config();
@@ -13,7 +15,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-     "https://ci-optimization-dashboard-frontend.vercel.app"
+    "https://ci-optimization-dashboard-frontend.vercel.app"
   ],
   credentials: true
 }));
@@ -22,6 +24,8 @@ app.use(express.json());
 app.use("/api/commits", commitRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/github", githubRoutes);
+app.use("/api/auth", authRoutes);
 
 
 app.get("/", (req, res) => {
