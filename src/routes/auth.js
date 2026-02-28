@@ -87,9 +87,10 @@ router.get("/github/callback", async (req, res) => {
     res.redirect(`${process.env.FRONTEND_URL}/auth-success?token=${jwtToken}`);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "GitHub Auth Failed" });
-  }
+  console.error("GitHub OAuth Error:");
+  console.error(err.response?.data || err.message || err);
+  res.status(500).json({ error: "GitHub Auth Failed" });
+}
 });
 
 export default router;
