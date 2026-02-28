@@ -94,10 +94,11 @@ router.get("/github/callback", async (req, res) => {
     res.redirect(process.env.FRONTEND_URL);
 
   } catch (err) {
-    console.error("GitHub OAuth Error:");
-    console.error(err.response?.data || err.message || err);
-    res.status(500).json({ error: "GitHub Auth Failed" });
-  }
+  console.error("===== GITHUB ERROR =====");
+  console.error(err.response?.data);
+  console.error(err.message);
+  res.status(500).json({ error: "GitHub Auth Failed" });
+}
 });
 
 export default router;

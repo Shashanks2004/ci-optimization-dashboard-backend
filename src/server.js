@@ -11,6 +11,8 @@ import authRoutes from "./routes/auth.js";
 import aiRoutes from "./routes/ai.js";
 import commitRoutes from "./routes/commit.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import githubRoutes from "./routes/github.routes.js";
+import authRoutes from "./routes/auth.js";
 
 const PORT = process.env.PORT || 5000;
 
