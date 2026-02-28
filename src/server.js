@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 5000;
 =============================== */
 
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: "https://ci-optimization-dashboard-frontend.vercel.app",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 };
@@ -36,9 +36,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // true only in production HTTPS
+      secure: true, // true only in production HTTPS
       httpOnly: true,
-      sameSite: "lax", // 🔥 important for CORS cookies
+      sameSite: "none", // 🔥 important for CORS cookies
     },
   })
 );
