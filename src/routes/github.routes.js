@@ -19,4 +19,16 @@ router.get("/commits/:repo", getRepoCommits);
 router.get("/metrics/:repo", getRepoMetrics);
 router.get("/trend/:repo", getRepoTrend);
 
+router.get("/me", (req, res) => {
+  if (!req.session.user) {
+    return res.json({ connected: false });
+  }
+
+  res.json({
+    connected: true,
+    user: req.session.user,
+  });
+});
+
+
 export default router;
