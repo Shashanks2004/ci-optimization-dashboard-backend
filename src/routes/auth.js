@@ -1,6 +1,5 @@
 import express from "express";
 import axios from "axios";
-import jwt from "jsonwebtoken";
 import pool from "../config/db.js";
 
 const router = express.Router();
@@ -36,16 +35,20 @@ router.get("/github/callback", async (req, res) => {
 
     const accessToken = tokenResponse.data.access_token;
 
+    if (!accessToken) {
+      return res.status(400).json({ error: "No access token received" });
+    }
+
     // Get GitHub user info
     const userResponse = await axios.get("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    const { id, login, email } = userResponse.data;
+    const { login, email } = userResponse.data;
 
-    // If email is null, fetch emails separately
     let userEmail = email;
 
+    // If email is null, fetch emails separately
     if (!userEmail) {
       const emailResponse = await axios.get(
         "https://api.github.com/user/emails",
@@ -55,7 +58,11 @@ router.get("/github/callback", async (req, res) => {
       );
 
       const primaryEmail = emailResponse.data.find(e => e.primary);
-      userEmail = primaryEmail.email;
+      userEmail = primaryEmail?.email;
+    }
+
+    if (!userEmail) {
+      return res.status(400).json({ error: "Email not found from GitHub" });
     }
 
     // Check user in DB
@@ -76,21 +83,21 @@ router.get("/github/callback", async (req, res) => {
       user = userCheck.rows[0];
     }
 
-    // Create JWT
-    const jwtToken = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    // 🔥 STORE USER IN SESSION (NO JWT)
+    req.session.user = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    };
 
-    // Redirect back to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL}/auth-success?token=${jwtToken}`);
+    // Redirect to frontend (no token needed)
+    res.redirect(process.env.FRONTEND_URL);
 
   } catch (err) {
-  console.error("GitHub OAuth Error:");
-  console.error(err.response?.data || err.message || err);
-  res.status(500).json({ error: "GitHub Auth Failed" });
-}
+    console.error("GitHub OAuth Error:");
+    console.error(err.response?.data || err.message || err);
+    res.status(500).json({ error: "GitHub Auth Failed" });
+  }
 });
 
 export default router;
