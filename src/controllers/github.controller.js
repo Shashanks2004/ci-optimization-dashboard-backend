@@ -9,55 +9,45 @@ export const githubLogin = (req, res) => {
   res.redirect(redirectUrl);
 };
 
-export const githubCallback = async (req, res) => {
+router.get("/github/callback", async (req, res) => {
+  const code = req.query.code;
+
   try {
-    const { code } = req.query;
+    console.log("Received code:", code);
+    console.log("CLIENT ID:", process.env.GITHUB_CLIENT_ID);
+    console.log("CLIENT SECRET EXISTS:", !!process.env.GITHUB_CLIENT_SECRET);
 
     const tokenResponse = await axios.post(
-  "https://github.com/login/oauth/access_token",
-  new URLSearchParams({
-    client_id: process.env.GITHUB_CLIENT_ID,
-    client_secret: process.env.GITHUB_CLIENT_SECRET,
-    code: code,
-  }),
-  {
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  }
-);
-    // ✅ Put debug log HERE
+      "https://github.com/login/oauth/access_token",
+      {
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code,
+      },
+      {
+        headers: { Accept: "application/json" },
+      }
+    );
+
     console.log("Token Response:", tokenResponse.data);
 
     const accessToken = tokenResponse.data.access_token;
 
     if (!accessToken) {
       return res.status(400).json({
-        message: "Access token not received",
-        error: tokenResponse.data,
+        error: "No access token received",
+        github_response: tokenResponse.data,
       });
     }
 
-    const userResponse = await axios.get(
-      "https://api.github.com/user",
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+    res.json({ success: true });
 
-    req.session.githubToken = accessToken;
-    req.session.githubUser = userResponse.data;
-
-    res.redirect("http://localhost:5173/dashboard");
-
-  } catch (error) {
-    console.error("FULL ERROR:", error.response?.data || error.message);
-    res.status(500).json({ message: "GitHub Auth Failed" });
+  } catch (err) {
+    console.error("FULL ERROR:");
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: "GitHub Auth Failed" });
   }
-};
+});
 
 export const getUserRepos = async (req, res) => {
   try {
