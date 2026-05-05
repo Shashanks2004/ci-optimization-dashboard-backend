@@ -20,35 +20,54 @@ router.get("/github/callback", async (req, res) => {
   const code = req.query.code;
 
   try {
-    // Exchange code for access token
+    console.log("🔹 CODE:", code);
+    console.log("🔹 CLIENT ID:", process.env.GITHUB_CLIENT_ID);
+    console.log("🔹 SECRET EXISTS:", !!process.env.GITHUB_CLIENT_SECRET);
+
+    /* ==============================
+       STEP 2.1 — Exchange code for token
+    ============================== */
     const tokenResponse = await axios.post(
       "https://github.com/login/oauth/access_token",
       {
         client_id: process.env.GITHUB_CLIENT_ID,
         client_secret: process.env.GITHUB_CLIENT_SECRET,
         code,
+        redirect_uri:
+          "https://ci-optimization-dashboard-backend.onrender.com/api/auth/github/callback",
       },
       {
         headers: { Accept: "application/json" },
       }
     );
 
+    console.log("🔹 TOKEN RESPONSE:", tokenResponse.data);
+
     const accessToken = tokenResponse.data.access_token;
 
     if (!accessToken) {
-      return res.status(400).json({ error: "No access token received" });
+      return res.status(400).json({
+        error: "No access token received",
+        github_response: tokenResponse.data,
+      });
     }
 
-    // Get GitHub user info
+    /* ==============================
+       STEP 2.2 — Get GitHub user
+    ============================== */
     const userResponse = await axios.get("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+
+    console.log("🔹 USER DATA:", userResponse.data);
 
     const { login, email } = userResponse.data;
 
     let userEmail = email;
 
-    // If email is null, fetch emails separately
+    /* ==============================
+       STEP 2.3 — Get email if private
+    ============================== */
     if (!userEmail) {
       const emailResponse = await axios.get(
         "https://api.github.com/user/emails",
@@ -57,7 +76,9 @@ router.get("/github/callback", async (req, res) => {
         }
       );
 
-      const primaryEmail = emailResponse.data.find(e => e.primary);
+      console.log("🔹 EMAIL DATA:", emailResponse.data);
+
+      const primaryEmail = emailResponse.data.find((e) => e.primary);
       userEmail = primaryEmail?.email;
     }
 
@@ -65,7 +86,9 @@ router.get("/github/callback", async (req, res) => {
       return res.status(400).json({ error: "Email not found from GitHub" });
     }
 
-    // Check user in DB
+    /* ==============================
+       STEP 2.4 — DB Check/Create
+    ============================== */
     const userCheck = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [userEmail]
@@ -83,22 +106,37 @@ router.get("/github/callback", async (req, res) => {
       user = userCheck.rows[0];
     }
 
-    // 🔥 STORE USER IN SESSION (NO JWT)
+    /* ==============================
+       STEP 2.5 — Save session
+    ============================== */
     req.session.user = {
       id: user.id,
       email: user.email,
       name: user.name,
     };
 
-    // Redirect to frontend (no token needed)
+    console.log("✅ USER STORED IN SESSION");
+
+    /* ==============================
+       STEP 2.6 — Redirect frontend
+    ============================== */
     res.redirect(process.env.FRONTEND_URL);
 
   } catch (err) {
-  console.error("===== GITHUB ERROR =====");
-  console.error(err.response?.data);
-  console.error(err.message);
-  res.status(500).json({ error: "GitHub Auth Failed" });
-}
+    console.error("===== FULL GITHUB ERROR =====");
+
+    if (err.response) {
+      console.error("STATUS:", err.response.status);
+      console.error("DATA:", err.response.data);
+    } else {
+      console.error(err.message);
+    }
+
+    res.status(500).json({
+      error: "GitHub Auth Failed",
+      details: err.response?.data || err.message,
+    });
+  }
 });
 
 export default router;
