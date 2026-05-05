@@ -43,7 +43,7 @@ export const githubCallback = async (req, res) => {
       "https://api.github.com/user",
       {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `token ${accessToken}`,
         },
       }
     );

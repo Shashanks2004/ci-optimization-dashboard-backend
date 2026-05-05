@@ -1,7 +1,6 @@
 import express from "express";
 import axios from "axios";
 import pool from "../config/db.js";
-import qs from "querystring";
 
 const router = express.Router();
 
@@ -24,22 +23,18 @@ router.get("/github/callback", async (req, res) => {
     console.log("🔹 CODE:", code);
 
     // 🔥 Exchange code for access token
-const tokenResponse = await axios.post(
-  "https://github.com/login/oauth/access_token",
-  qs.stringify({
+const tokenResponse = await axios({
+  method: "post",
+  url: "https://github.com/login/oauth/access_token",
+  headers: {
+    Accept: "application/json",
+  },
+  data: {
     client_id: process.env.GITHUB_CLIENT_ID,
     client_secret: process.env.GITHUB_CLIENT_SECRET,
-    code,
-    redirect_uri:
-      "https://ci-optimization-dashboard-backend.onrender.com/api/auth/github/callback",
-  }),
-  {
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  }
-);
+    code: code,
+  },
+});
 
     console.log("🔹 TOKEN RESPONSE:", tokenResponse.data);
 
@@ -53,9 +48,12 @@ const tokenResponse = await axios.post(
     }
 
     // 🔥 Get GitHub user
-    const userResponse = await axios.get("https://api.github.com/user", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+   const userResponse = await axios.get("https://api.github.com/user", {
+  headers: {
+    Authorization: `token ${accessToken}`,
+    "User-Agent": "ci-dashboard-app",
+  },
+});
 
     const githubUser = userResponse.data;
 
@@ -64,11 +62,14 @@ const tokenResponse = await axios.post(
     // 🔥 Get email if private
     if (!userEmail) {
       const emailResponse = await axios.get(
-        "https://api.github.com/user/emails",
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
+  "https://api.github.com/user/emails",
+  {
+    headers: {
+      Authorization: `token ${accessToken}`,
+      "User-Agent": "ci-dashboard-app",
+    },
+  }
+);
 
       const primaryEmail = emailResponse.data.find((e) => e.primary);
       userEmail = primaryEmail?.email;
