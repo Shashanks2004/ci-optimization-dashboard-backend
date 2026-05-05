@@ -1,6 +1,7 @@
 import express from "express";
 import axios from "axios";
 import pool from "../config/db.js";
+import qs from "querystring";
 
 const router = express.Router();
 
@@ -23,19 +24,22 @@ router.get("/github/callback", async (req, res) => {
     console.log("🔹 CODE:", code);
 
     // 🔥 Exchange code for access token
-    const tokenResponse = await axios.post(
-      "https://github.com/login/oauth/access_token",
-      {
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code,
-        redirect_uri:
-          "https://ci-optimization-dashboard-backend.onrender.com/api/auth/github/callback",
-      },
-      {
-        headers: { Accept: "application/json" },
-      }
-    );
+const tokenResponse = await axios.post(
+  "https://github.com/login/oauth/access_token",
+  qs.stringify({
+    client_id: process.env.GITHUB_CLIENT_ID,
+    client_secret: process.env.GITHUB_CLIENT_SECRET,
+    code,
+    redirect_uri:
+      "https://ci-optimization-dashboard-backend.onrender.com/api/auth/github/callback",
+  }),
+  {
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  }
+);
 
     console.log("🔹 TOKEN RESPONSE:", tokenResponse.data);
 
