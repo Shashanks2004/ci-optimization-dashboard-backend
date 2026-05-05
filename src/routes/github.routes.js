@@ -1,4 +1,5 @@
 import express from "express";
+import axios from "axios";
 import {
   githubLogin,
   //githubCallback,
@@ -29,46 +30,5 @@ router.get("/me", (req, res) => {
     user: req.session.user,
   });
 });
-
-router.get("/github/callback", async (req, res) => {
-  const code = req.query.code;
-
-  try {
-    console.log("Received code:", code);
-    console.log("CLIENT ID:", process.env.GITHUB_CLIENT_ID);
-    console.log("CLIENT SECRET EXISTS:", !!process.env.GITHUB_CLIENT_SECRET);
-
-    const tokenResponse = await axios.post(
-      "https://github.com/login/oauth/access_token",
-      {
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code,
-      },
-      {
-        headers: { Accept: "application/json" },
-      }
-    );
-
-    console.log("Token Response:", tokenResponse.data);
-
-    const accessToken = tokenResponse.data.access_token;
-
-    if (!accessToken) {
-      return res.status(400).json({
-        error: "No access token received",
-        github_response: tokenResponse.data,
-      });
-    }
-
-    res.json({ success: true });
-
-  } catch (err) {
-    console.error("FULL ERROR:");
-    console.error(err.response?.data || err.message);
-    res.status(500).json({ error: "GitHub Auth Failed" });
-  }
-});
-
 
 export default router;
