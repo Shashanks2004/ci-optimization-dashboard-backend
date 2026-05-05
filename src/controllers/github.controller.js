@@ -53,10 +53,21 @@ export const githubCallback = async (req, res) => {
 
     res.redirect("http://localhost:5173/dashboard");
 
-  } catch (error) {
-    console.error("FULL ERROR:", error.response?.data || error.message);
-    res.status(500).json({ message: "GitHub Auth Failed" });
+  } catch (err) {
+  console.error("===== FULL GITHUB ERROR =====");
+
+  if (err.response) {
+    console.error("STATUS:", err.response.status);
+    console.error("DATA:", err.response.data);
+  } else {
+    console.error(err.message);
   }
+
+  res.status(500).json({
+    error: "GitHub Auth Failed",
+    details: err.response?.data || err.message,
+  });
+}
 };
 
 export const getUserRepos = async (req, res) => {
