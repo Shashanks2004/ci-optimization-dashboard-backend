@@ -21,12 +21,8 @@ router.get("/github/callback", async (req, res) => {
 
   try {
     console.log("🔹 CODE:", code);
-    console.log("🔹 CLIENT ID:", process.env.GITHUB_CLIENT_ID);
-    console.log("🔹 SECRET EXISTS:", !!process.env.GITHUB_CLIENT_SECRET);
 
-    /* ==============================
-       STEP 2.1 — Exchange code for token
-    ============================== */
+    // 🔥 Exchange code for access token
     const tokenResponse = await axios.post(
       "https://github.com/login/oauth/access_token",
       {
@@ -52,22 +48,16 @@ router.get("/github/callback", async (req, res) => {
       });
     }
 
-    /* ==============================
-       STEP 2.2 — Get GitHub user
-    ============================== */
+    // 🔥 Get GitHub user
     const userResponse = await axios.get("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    console.log("🔹 USER DATA:", userResponse.data);
+    const githubUser = userResponse.data;
 
-    const { login, email } = userResponse.data;
+    let userEmail = githubUser.email;
 
-    let userEmail = email;
-
-    /* ==============================
-       STEP 2.3 — Get email if private
-    ============================== */
+    // 🔥 Get email if private
     if (!userEmail) {
       const emailResponse = await axios.get(
         "https://api.github.com/user/emails",
@@ -75,8 +65,6 @@ router.get("/github/callback", async (req, res) => {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
-
-      console.log("🔹 EMAIL DATA:", emailResponse.data);
 
       const primaryEmail = emailResponse.data.find((e) => e.primary);
       userEmail = primaryEmail?.email;
@@ -86,9 +74,7 @@ router.get("/github/callback", async (req, res) => {
       return res.status(400).json({ error: "Email not found from GitHub" });
     }
 
-    /* ==============================
-       STEP 2.4 — DB Check/Create
-    ============================== */
+    // 🔥 DB check
     const userCheck = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [userEmail]
@@ -99,27 +85,27 @@ router.get("/github/callback", async (req, res) => {
     if (userCheck.rows.length === 0) {
       const newUser = await pool.query(
         "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *",
-        [login, userEmail]
+        [githubUser.login, userEmail]
       );
       user = newUser.rows[0];
     } else {
       user = userCheck.rows[0];
     }
 
-    /* ==============================
-       STEP 2.5 — Save session
-    ============================== */
+    // 🔥 STORE FULL GITHUB DATA IN SESSION
     req.session.user = {
       id: user.id,
       email: user.email,
       name: user.name,
+      login: githubUser.login,
+      avatar_url: githubUser.avatar_url,
+      public_repos: githubUser.public_repos,
+      followers: githubUser.followers,
     };
 
     console.log("✅ USER STORED IN SESSION");
 
-    /* ==============================
-       STEP 2.6 — Redirect frontend
-    ============================== */
+    // 🔥 Redirect back to frontend
     res.redirect(process.env.FRONTEND_URL);
 
   } catch (err) {
