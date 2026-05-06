@@ -1,6 +1,6 @@
 import express from "express";
 import axios from "axios";
-import pool from "../config/db.js";
+//import pool from "../config/db.js";
 
 const router = express.Router();
 
@@ -22,24 +22,24 @@ router.get("/github/callback", async (req, res) => {
   try {
     console.log("🔹 CODE:", code);
 
-    // 🔥 Exchange code for access token
-const tokenResponse = await axios({
-  method: "post",
-  url: "https://github.com/login/oauth/access_token",
-  headers: {
-    Accept: "application/json",
-  },
-  data: {
-    client_id: process.env.GITHUB_CLIENT_ID,
-    client_secret: process.env.GITHUB_CLIENT_SECRET,
-    code: code,
-  },
-});
+    // Exchange code for token
+    const tokenResponse = await axios({
+      method: "post",
+      url: "https://github.com/login/oauth/access_token",
+      headers: {
+        Accept: "application/json",
+      },
+      data: {
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code: code,
+      },
+    });
 
     console.log("🔹 TOKEN RESPONSE:", tokenResponse.data);
 
     const accessToken = tokenResponse.data.access_token;
-    
+
     if (!accessToken) {
       return res.status(400).json({
         error: "No access token received",
@@ -47,85 +47,44 @@ const tokenResponse = await axios({
       });
     }
 
-    // 🔥 Get GitHub user
-   const userResponse = await axios.get("https://api.github.com/user", {
-  headers: {
-    Authorization: `token ${accessToken}`,
-    "User-Agent": "ci-dashboard-app",
-  },
-});
+    // Get GitHub user
+    const userResponse = await axios.get(
+      "https://api.github.com/user",
+      {
+        headers: {
+          Authorization: `token ${accessToken}`,
+          "User-Agent": "ci-dashboard-app",
+        },
+      }
+    );
 
     const githubUser = userResponse.data;
 
-    let userEmail = githubUser.email;
-
-    // 🔥 Get email if private
-    if (!userEmail) {
-      const emailResponse = await axios.get(
-  "https://api.github.com/user/emails",
-  {
-    headers: {
-      Authorization: `token ${accessToken}`,
-      "User-Agent": "ci-dashboard-app",
-    },
-  }
-);
-
-      const primaryEmail = emailResponse.data.find((e) => e.primary);
-      userEmail = primaryEmail?.email;
-    }
-
-    if (!userEmail) {
-      return res.status(400).json({ error: "Email not found from GitHub" });
-    }
-
-    // 🔥 DB check
-    const userCheck = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [userEmail]
-    );
-
-    let user;
-
-    if (userCheck.rows.length === 0) {
-      const newUser = await pool.query(
-        "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *",
-        [githubUser.login, userEmail]
-      );
-      user = newUser.rows[0];
-    } else {
-      user = userCheck.rows[0];
-    }
-
-    // 🔥 STORE FULL GITHUB DATA IN SESSION
+    // Store session ONLY
     req.session.githubToken = accessToken;
 
-req.session.githubUser = githubUser;
-
-req.session.appUser = {
-  id: user.id,
-  email: user.email,
-  name: user.name,
-};
+    req.session.githubUser = githubUser;
 
     console.log("✅ USER STORED IN SESSION");
 
-    // 🔥 Redirect back to frontend
-    res.redirect(process.env.FRONTEND_URL);
+    // Redirect frontend
+    return res.redirect(process.env.FRONTEND_URL);
 
   } catch (err) {
     console.error("===== FULL GITHUB ERROR =====");
 
+    console.error("MESSAGE:", err.message);
+
     if (err.response) {
       console.error("STATUS:", err.response.status);
-      console.error("DATA:", err.response.data);
-    } else {
-      console.error(err.message);
+      console.error("DATA:", JSON.stringify(err.response.data, null, 2));
     }
+
+    console.error("STACK:", err.stack);
 
     res.status(500).json({
       error: "GitHub Auth Failed",
-      details: err.response?.data || err.message,
+      details: err.message,
     });
   }
 });
