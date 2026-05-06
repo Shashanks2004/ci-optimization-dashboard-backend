@@ -1,8 +1,6 @@
 import express from "express";
 import axios from "axios";
 import {
-  githubLogin,
-  //githubCallback,
   getUserRepos,
   getGithubProfile,
   getRepoCommits,
@@ -12,7 +10,6 @@ import {
 
 const router = express.Router();
 
-router.get("/login", githubLogin);
 //router.get("/callback", githubCallback);
 router.get("/repos", getUserRepos);
 router.get("/me", getGithubProfile);
