@@ -3,8 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import session from "express-session";
 
-import commitRoutes from "./routes/commit.routes.js";
-import dashboardRoutes from "./routes/dashboard.routes.js";
+//import commitRoutes from "./routes/commit.routes.js";
+//import dashboardRoutes from "./routes/dashboard.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
 import githubRoutes from "./routes/github.routes.js";
 import authRoutes from "./routes/auth.js";
@@ -36,8 +36,8 @@ app.use(session({
   }
 }));
 
-app.use("/api/commits", commitRoutes);
-app.use("/api/dashboard", dashboardRoutes);
+//app.use("/api/commits", commitRoutes);
+//app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/github", githubRoutes);
 app.use("/api/auth", authRoutes);
