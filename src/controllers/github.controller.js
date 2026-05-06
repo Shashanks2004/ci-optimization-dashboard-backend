@@ -1,75 +1,5 @@
 import axios from "axios";
 
-export const githubLogin = (req, res) => {
-  const clientId = process.env.GITHUB_CLIENT_ID;
-
-  const redirectUrl =
-    `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=repo`;
-
-  res.redirect(redirectUrl);
-};
-
-export const githubCallback = async (req, res) => {
-  try {
-    const { code } = req.query;
-
-    const tokenResponse = await axios.post(
-  "https://github.com/login/oauth/access_token",
-  new URLSearchParams({
-    client_id: process.env.GITHUB_CLIENT_ID,
-    client_secret: process.env.GITHUB_CLIENT_SECRET,
-    code: code,
-  }),
-  {
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  }
-);
-    // ✅ Put debug log HERE
-    console.log("Token Response:", tokenResponse.data);
-
-    const accessToken = tokenResponse.data.access_token;
-
-    if (!accessToken) {
-      return res.status(400).json({
-        message: "Access token not received",
-        error: tokenResponse.data,
-      });
-    }
-
-    const userResponse = await axios.get(
-      "https://api.github.com/user",
-      {
-        headers: {
-          Authorization: `token ${accessToken}`,
-        },
-      }
-    );
-
-    req.session.githubToken = accessToken;
-    req.session.githubUser = userResponse.data;
-
-    res.redirect("http://localhost:5173/dashboard");
-
-  } catch (err) {
-  console.error("===== FULL GITHUB ERROR =====");
-
-  if (err.response) {
-    console.error("STATUS:", err.response.status);
-    console.error("DATA:", err.response.data);
-  } else {
-    console.error(err.message);
-  }
-
-  res.status(500).json({
-    error: "GitHub Auth Failed",
-    details: err.response?.data || err.message,
-  });
-}
-};
-
 export const getUserRepos = async (req, res) => {
   try {
     if (!req.session.githubToken) {
@@ -80,7 +10,7 @@ export const getUserRepos = async (req, res) => {
       "https://api.github.com/user/repos",
       {
         headers: {
-          Authorization: `Bearer ${req.session.githubToken}`,
+          Authorization: `token ${req.session.githubToken}`,
         },
       }
     );
@@ -102,7 +32,7 @@ export const getGithubProfile = async (req, res) => {
       "https://api.github.com/user",
       {
         headers: {
-          Authorization: `Bearer ${req.session.githubToken}`,
+          Authorization: `token ${req.session.githubToken}`,
         },
       }
     );
@@ -131,7 +61,7 @@ export const getRepoCommits = async (req, res) => {
       `https://api.github.com/repos/${username}/${repo}/commits?per_page=5`,
       {
         headers: {
-          Authorization: `Bearer ${req.session.githubToken}`,
+          Authorization: `token ${req.session.githubToken}`,
         },
       }
     );
@@ -165,7 +95,7 @@ export const getRepoMetrics = async (req, res) => {
       `https://api.github.com/repos/${username}/${repo}/actions/runs?per_page=20`,
       {
         headers: {
-          Authorization: `Bearer ${req.session.githubToken}`,
+          Authorization: `token ${req.session.githubToken}`,
         },
       }
     );
@@ -231,7 +161,7 @@ export const getRepoTrend = async (req, res) => {
       `https://api.github.com/repos/${username}/${repo}/actions/runs?per_page=10`,
       {
         headers: {
-          Authorization: `Bearer ${req.session.githubToken}`,
+          Authorization: `token ${req.session.githubToken}`,
         },
       }
     );

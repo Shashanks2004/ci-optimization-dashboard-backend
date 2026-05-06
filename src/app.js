@@ -25,12 +25,14 @@ app.use(cors({
 app.use(express.json());
 
 app.use(session({
-  secret: "supersecretkey",
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  proxy: true,
   cookie: {
     secure: true,
     sameSite: "none",
+    httpOnly: true,
   }
 }));
 

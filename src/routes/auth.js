@@ -39,7 +39,7 @@ const tokenResponse = await axios({
     console.log("🔹 TOKEN RESPONSE:", tokenResponse.data);
 
     const accessToken = tokenResponse.data.access_token;
-
+    
     if (!accessToken) {
       return res.status(400).json({
         error: "No access token received",
@@ -98,15 +98,15 @@ const tokenResponse = await axios({
     }
 
     // 🔥 STORE FULL GITHUB DATA IN SESSION
-    req.session.user = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      login: githubUser.login,
-      avatar_url: githubUser.avatar_url,
-      public_repos: githubUser.public_repos,
-      followers: githubUser.followers,
-    };
+    req.session.githubToken = accessToken;
+
+req.session.githubUser = githubUser;
+
+req.session.appUser = {
+  id: user.id,
+  email: user.email,
+  name: user.name,
+};
 
     console.log("✅ USER STORED IN SESSION");
 
